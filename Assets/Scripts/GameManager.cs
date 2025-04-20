@@ -25,11 +25,11 @@ public class GameManager : MonoBehaviour
     
     private void Awake()
     {
-        // Singleton pattern
+        // Singleton sin persistencia entre escenas
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Eliminamos DontDestroyOnLoad para evitar problemas con referencias
         }
         else
         {
@@ -138,40 +138,8 @@ public class GameManager : MonoBehaviour
         
         // Recargar la escena actual
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        
-        // Importante: actualizar las referencias después de cargar la escena
-        SceneManager.sceneLoaded += OnSceneReloaded;
     }
-
-    private void OnSceneReloaded(Scene scene, LoadSceneMode mode)
-    {
-        // Actualizar referencias a objetos UI
-        gameOverPanel = GameObject.Find("GameOverPanel");
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-        
-        // Buscar el botón de reinicio
-        GameObject restartButtonObj = GameObject.Find("RestartButton");
-        if (restartButtonObj != null)
-        {
-            restartButton = restartButtonObj.GetComponent<Button>();
-            if (restartButton != null)
-            {
-                restartButton.onClick.RemoveAllListeners();
-                restartButton.onClick.AddListener(RestartGame);
-            }
-        }
-        
-        // Importante: quitar este listener para evitar múltiples registros
-        SceneManager.sceneLoaded -= OnSceneReloaded;
-        
-        // Resetear variables
-        gameOver = false;
-        gamePaused = false;
-        score = 0;
-}
+    
     public void ResetGame()
     {
         // Asegurarse de que el panel de game over esté desactivado
