@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Para interactuar con elementos UI
-using TMPro; // Para TextMeshPro
+using UnityEngine.UI;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,12 +16,15 @@ public class GameManager : MonoBehaviour
     
     [Header("UI References")]
     public GameObject gameOverPanel;
-    public TextMeshProUGUI scoreText; // Para mostrar el puntaje (opcional)
-    public Button restartButton; // Referencia al botón de reiniciar
+    public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI finalScoreText;
+    public Button restartButton;
     
-    [Header("Game Settings")]
+    [Header("Score Settings")]
     public float score = 0;
-    public float scoreMultiplier = 1;
+    public float scoreMultiplier = 1f;
+    public float scoreMultiplierIncreaseRate = 0.1f; // Incremento del multiplicador por segundo
+    public float maxScoreMultiplier = 5f; // Máximo multiplicador de puntaje
     
     private void Awake()
     {
@@ -29,7 +32,6 @@ public class GameManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            // Eliminamos DontDestroyOnLoad para evitar problemas con referencias
         }
         else
         {
@@ -47,20 +49,20 @@ public class GameManager : MonoBehaviour
         {
             gameOverPanel.SetActive(false);
         }
-        
-        // Configurar el listener del botón de reinicio si existe
-        if (restartButton != null)
-        {
-            restartButton.onClick.AddListener(RestartGame);
-        }
     }
     
     void Update()
     {
-        // Si el juego está activo, aumentar el puntaje
+        // Si el juego está activo, aumentar el puntaje y el multiplicador
         if (!gameOver && !gamePaused)
         {
-            score += Time.deltaTime * scoreMultiplier;
+            // Aumentar el multiplicador con el tiempo
+            scoreMultiplier = Mathf.Min(scoreMultiplier + scoreMultiplierIncreaseRate * Time.deltaTime, maxScoreMultiplier);
+            
+            // Aumentar el puntaje basado en el multiplicador
+            score += Time.deltaTime * scoreMultiplier * 10; // Multiplicamos por 10 para que suba más rápido
+            
+            // Actualizar la UI del puntaje
             UpdateScoreUI();
         }
         
@@ -100,13 +102,19 @@ public class GameManager : MonoBehaviour
             
         gameOver = true;
         
+        // Actualizar el puntaje final en el panel de Game Over
+        if (finalScoreText != null)
+        {
+            finalScoreText.text = "Puntaje Final: " + Mathf.Floor(score).ToString();
+        }
+        
         // Mostrar panel de game over si existe
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
         }
         
-        Debug.Log("GAME OVER - Presiona R para reiniciar");
+        Debug.Log("GAME OVER - Puntaje final: " + Mathf.Floor(score));
         
         // Detener todos los sistemas del juego
         ObstacleManager obstacleManager = FindObjectOfType<ObstacleManager>();
@@ -152,6 +160,7 @@ public class GameManager : MonoBehaviour
         gameOver = false;
         gamePaused = false;
         score = 0;
+        scoreMultiplier = 1f;
         Time.timeScale = 1f;
         
         // Reactivar los sistemas del juego si existen
@@ -166,6 +175,9 @@ public class GameManager : MonoBehaviour
         {
             playerController.enabled = true;
         }
+        
+        // Actualizar la UI del puntaje
+        UpdateScoreUI();
         
         Debug.Log("Game Reset - All systems reinitialized");
     }
