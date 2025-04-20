@@ -131,14 +131,17 @@ public class ObstacleManager : MonoBehaviour
                 // Actualizar el offset de la textura para dar la impresión de movimiento
                 textureOffset.y += scrollSpeed * Time.deltaTime * 0.1f;
                 
-                // Aplicar el offset a la textura principal
-                floorRenderer.material.SetTextureOffset("_MainTex", textureOffset);
-                
-                // Si estás usando URP/HDRP, también puedes necesitar actualizar estas propiedades
+                // Para URP/HDRP, utiliza las propiedades adecuadas
                 if (floorRenderer.material.HasProperty("_BaseMap"))
                 {
                     floorRenderer.material.SetTextureOffset("_BaseMap", textureOffset);
                 }
+                else if (floorRenderer.material.HasProperty("_MainTex"))
+                {
+                    // Sólo aplicar el offset a la textura principal si existe
+                    floorRenderer.material.SetTextureOffset("_MainTex", textureOffset);
+                }
+                // Si estás usando un shader personalizado, puedes añadir aquí más propiedades
             }
         }
     }

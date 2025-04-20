@@ -130,6 +130,7 @@ public class LiquidCharacterController : MonoBehaviour
     
     void OnCollisionEnter(Collision collision)
     {
+        Debug.Log("Player collided with: " + collision.gameObject.name + " (Tag: " + collision.gameObject.tag + ")");
         // Check if we've landed on something
         if (collision.contacts[0].normal.y > 0.5f)
         {
@@ -170,10 +171,16 @@ public class LiquidCharacterController : MonoBehaviour
             c.enabled = false;
         }
         
-        // Puedes añadir efectos visuales de muerte aquí
-        
-        // Opcionalmente, reiniciar el nivel después de un tiempo
-        // Invoke("RestartLevel", 2f);
+        // Notificar al GameManager
+        GameManager gameManager = GameObject.FindAnyObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.GameOver();
+        }
+        else
+        {
+            Debug.LogError("GameManager not found in scene!");
+        }
     }
     
     // Método para reiniciar el nivel

@@ -59,6 +59,7 @@ GameObject:
   - component: {fileID: 6054518665332887442}
   - component: {fileID: 8524280804802042647}
   - component: {fileID: 924088530295936136}
+  - component: {fileID: 3310522528464880768}
   m_Layer: 0
   m_Name: lavaWall2
   m_TagString: Obstacle
@@ -155,3 +156,17 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3310522528464880768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7298069069175515893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8439aa929e62f2d46b9a6b78e74b0483, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isDeadly: 1
+  damage: 1

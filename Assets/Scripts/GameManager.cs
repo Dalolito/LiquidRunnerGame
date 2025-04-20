@@ -65,6 +65,7 @@ public class GameManager : MonoBehaviour
     
     public void GameOver()
     {
+         Debug.Log("GameOver() called. Stack trace: " + System.Environment.StackTrace);
         if (gameOver)
             return;
             
@@ -78,12 +79,31 @@ public class GameManager : MonoBehaviour
         
         Debug.Log("GAME OVER - Presiona R para reiniciar");
         
+
         // Detener todos los sistemas del juego
-        ObstacleManager obstacleManager = FindObjectOfType<ObstacleManager>();
+        ObstacleManager obstacleManager = GameObject.FindAnyObjectByType<ObstacleManager>();
         if (obstacleManager != null)
         {
             obstacleManager.enabled = false;
         }
+        
+        LiquidCharacterController playerController = GameObject.FindAnyObjectByType<LiquidCharacterController>();
+        if (playerController != null)
+        {
+            playerController.enabled = false;
+        }
+        
+        // Desactivar el tiempo del juego
+        Time.timeScale = 0f;
+        
+        // Desactivar el audio del juego
+        AudioListener audioListener = FindObjectOfType<AudioListener>();
+        if (audioListener != null)
+        {
+            audioListener.enabled = false;
+        }
+        
+        Debug.Log("Juego detenido. Presiona R para reiniciar.");
     }
     
     public void RestartGame()

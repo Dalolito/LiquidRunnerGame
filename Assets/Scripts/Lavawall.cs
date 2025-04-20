@@ -13,10 +13,9 @@ public class LavaWall : MonoBehaviour
         // Si el jugador choca con este muro
         if (other.CompareTag("Player"))
         {
-            // Aquí puedes implementar la lógica de muerte o daño
             Debug.Log("Player hit by lava wall!");
             
-            // Ejemplo de cómo interactuar con el controlador del personaje
+            // Obtener el controlador del jugador
             LiquidCharacterController playerController = other.GetComponent<LiquidCharacterController>();
             if (playerController != null)
             {
