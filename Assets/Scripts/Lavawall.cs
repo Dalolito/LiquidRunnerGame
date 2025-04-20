@@ -20,8 +20,17 @@ public class LavaWall : MonoBehaviour
             LiquidCharacterController playerController = other.GetComponent<LiquidCharacterController>();
             if (playerController != null)
             {
-                // Aquí podrías llamar a un método de daño o muerte en el controlador del jugador
-                // Por ejemplo: playerController.TakeDamage(damage);
+                // Verificar si el obstáculo es mortal
+                if (isDeadly)
+                {
+                    // Si es mortal, causar muerte inmediata
+                    playerController.Die();
+                }
+                else
+                {
+                    // Si no es mortal, aplicar daño según la cantidad configurada
+                    playerController.TakeDamage(damage);
+                }
             }
         }
     }

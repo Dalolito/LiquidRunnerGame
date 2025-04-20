@@ -8,9 +8,13 @@ public class LiquidCharacterController : MonoBehaviour
     public float moveSpeed = 5f;
     public float jumpForce = 5f;
     
+    [Header("Health Settings")]
+    public float maxHealth = 3f;
+    private float currentHealth;
+    
     public enum CharacterShape { Sphere, Cube, Flat }
 
-    [Header("Shape Changing")]  // <- Colocado aquí, justo antes de la variable
+    [Header("Shape Changing")]
     public CharacterShape currentShape = CharacterShape.Sphere;
     
     // References to different shape meshes/objects
@@ -20,15 +24,20 @@ public class LiquidCharacterController : MonoBehaviour
     
     private Rigidbody rb;
     private bool isGrounded = true;
+    private bool isDead = false;
     
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        currentHealth = maxHealth;
         UpdateCharacterShape();
     }
     
     void Update()
     {
+        // No procesar inputs si el personaje está muerto
+        if (isDead) return;
+        
         // Handle movement
         float horizontalInput = Input.GetAxis("Horizontal");
         Vector3 movement = new Vector3(horizontalInput, 0, 0) * moveSpeed * Time.deltaTime;
@@ -126,5 +135,52 @@ public class LiquidCharacterController : MonoBehaviour
         {
             isGrounded = true;
         }
+    }
+    
+    // Método para recibir daño
+    public void TakeDamage(float damageAmount)
+    {
+        if (isDead) return;
+        
+        currentHealth -= damageAmount;
+        Debug.Log("Player took damage! Current Health: " + currentHealth);
+        
+        // Verificar si el jugador ha muerto
+        if (currentHealth <= 0)
+        {
+            Die();
+        }
+    }
+    
+    // Método para manejar la muerte del personaje
+    public void Die()
+    {
+        if (isDead) return;
+        
+        isDead = true;
+        Debug.Log("Player has died!");
+        
+        // Desactivar la física del personaje
+        rb.isKinematic = true;
+        
+        // Deshabilitar los colliders
+        Collider[] colliders = GetComponents<Collider>();
+        foreach (Collider c in colliders)
+        {
+            c.enabled = false;
+        }
+        
+        // Puedes añadir efectos visuales de muerte aquí
+        
+        // Opcionalmente, reiniciar el nivel después de un tiempo
+        // Invoke("RestartLevel", 2f);
+    }
+    
+    // Método para reiniciar el nivel
+    void RestartLevel()
+    {
+        // Cargar la escena actual
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
 }

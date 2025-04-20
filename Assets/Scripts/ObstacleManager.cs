@@ -73,20 +73,27 @@ public class ObstacleManager : MonoBehaviour
 
         // Seleccionar un prefab aleatorio
         int prefabIndex = Random.Range(0, obstaclePrefabs.Length);
-
         
         // Crear el obstáculo
         Vector3 spawnPosition = new Vector3(3.2f, 1.4f, obstacleDistance);
         GameObject obstacle = Instantiate(obstaclePrefabs[prefabIndex], spawnPosition, Quaternion.identity);
         
-        // Configurar el obstáculo (puedes añadir más configuraciones según necesites)
-        // Por ejemplo, podrías aleatorizar su posición en X, tamaño, rotación, etc.
-        obstacle.transform.position = new Vector3(3.2f, obstacle.transform.position.y, obstacleDistance);
+        // Asegurarse de que el obstáculo y sus hijos tienen el tag "Obstacle"
+        obstacle.tag = "Obstacle";
+        foreach (Transform child in obstacle.transform)
+        {
+            child.gameObject.tag = "Obstacle";
+        }
+        
+        // Asegurarse de que los colliders estén configurados como triggers
+        foreach (Collider collider in obstacle.GetComponentsInChildren<Collider>(true))
+        {
+            collider.isTrigger = true;
+        }
         
         // Añadir a la lista de obstáculos activos
         activeObstacles.Add(obstacle);
     }
-
     void MoveObstacles()
     {
         List<GameObject> obstaclesToRemove = new List<GameObject>();
