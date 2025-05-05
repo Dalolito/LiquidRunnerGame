@@ -1219,7 +1219,7 @@ MonoBehaviour:
   - {fileID: 7044921891504577978, guid: 7f77c3275171b7b42b3af055b75f950d, type: 3}
   - {fileID: 2051879589496226289, guid: 8b8e9162c3b340743a6dfe5278f3178a, type: 3}
   - {fileID: 7226664607226437203, guid: a7ed07af2c8d5e4479deae2e0c6fd4f4, type: 3}
-  spawnInterval: 3.5
+  spawnInterval: 3
   minSpawnInterval: 1
   obstacleDistance: 30
   destroyDistance: -35

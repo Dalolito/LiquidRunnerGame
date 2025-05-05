@@ -161,8 +161,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cf3ad15ae48dca4eaf2730f2d7b459a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 5
+  moveSpeed: 7
   jumpForce: 5
+  maxHealth: 3
   currentShape: 0
   sphereShape: {fileID: 6692975153668135949}
   cubeShape: {fileID: 1687445125566578711}
