@@ -12,25 +12,54 @@ public class LiquidCharacterController : MonoBehaviour
     public float maxHealth = 3f;
     private float currentHealth;
     
-    public enum CharacterShape { Sphere, Cube, Flat }
+    public enum CharacterShape { Cube, Tetris1, Tetris2, Tetris3 }
 
     [Header("Shape Changing")]
-    public CharacterShape currentShape = CharacterShape.Sphere;
+    public CharacterShape currentShape = CharacterShape.Cube;
     
     // References to different shape meshes/objects
-    public GameObject sphereShape;
     public GameObject cubeShape;
-    public GameObject flatShape;
+    public GameObject tetrisFigure1;
+    public GameObject tetrisFigure2;
+    public GameObject tetrisFigure3;
     
     private Rigidbody rb;
     private bool isGrounded = true;
     private bool isDead = false;
     
+    [Header("Height Adjustment")]
+    public float characterHeight = 2f; // Altura base del personaje sobre el suelo
+    
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         currentHealth = maxHealth;
+        
+        // Asegurarse de que el Rigidbody esté configurado correctamente
+        if (rb != null)
+        {
+            rb.mass = 1.0f;
+            rb.linearDamping = 0.5f;
+            rb.angularDamping = 0.5f;
+            rb.freezeRotation = true; // Evita que el personaje gire
+        }
+        
+        // Centrar todas las figuras
+        CenterAllFigures();
+        
+        // Elevar el personaje completo
+        transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
+        
         UpdateCharacterShape();
+    }
+    
+    void CenterAllFigures()
+    {
+        // Centrar todas las figuras en el origen del personaje
+        if (cubeShape != null) cubeShape.transform.localPosition = Vector3.zero;
+        if (tetrisFigure1 != null) tetrisFigure1.transform.localPosition = Vector3.zero;
+        if (tetrisFigure2 != null) tetrisFigure2.transform.localPosition = Vector3.zero;
+        if (tetrisFigure3 != null) tetrisFigure3.transform.localPosition = Vector3.zero;
     }
     
     void Update()
@@ -50,18 +79,22 @@ public class LiquidCharacterController : MonoBehaviour
             isGrounded = false;
         }
         
-        // Handle shape changing
+        // Handle shape changing - Comenzando por Cube con la tecla 1
         if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            ChangeShape(CharacterShape.Sphere);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
             ChangeShape(CharacterShape.Cube);
         }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            ChangeShape(CharacterShape.Tetris1);
+        }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            ChangeShape(CharacterShape.Flat);
+            ChangeShape(CharacterShape.Tetris2);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            ChangeShape(CharacterShape.Tetris3);
         }
     }
     
@@ -74,67 +107,73 @@ public class LiquidCharacterController : MonoBehaviour
     void UpdateCharacterShape()
     {
         // Disable all shapes first
-        sphereShape.SetActive(false);
         cubeShape.SetActive(false);
-        flatShape.SetActive(false);
+        tetrisFigure1.SetActive(false);
+        tetrisFigure2.SetActive(false);
+        tetrisFigure3.SetActive(false);
         
         // Enable the current shape
         switch (currentShape)
         {
-            case CharacterShape.Sphere:
-                sphereShape.SetActive(true);
-                break;
             case CharacterShape.Cube:
                 cubeShape.SetActive(true);
                 break;
-            case CharacterShape.Flat:
-                flatShape.SetActive(true);
+            case CharacterShape.Tetris1:
+                tetrisFigure1.SetActive(true);
+                break;
+            case CharacterShape.Tetris2:
+                tetrisFigure2.SetActive(true);
+                break;
+            case CharacterShape.Tetris3:
+                tetrisFigure3.SetActive(true);
                 break;
         }
         
-        // Update the collider to match the new shape
-        UpdateCollider();
-    }
-    
-    void UpdateCollider()
-    {
-        // Remove existing colliders
-        Collider[] colliders = GetComponents<Collider>();
-        foreach (Collider c in colliders)
+        // Ya no necesitamos UpdateCollider() porque cada forma tiene sus propios colliders
+        // Opcional: Resetear velocidad al cambiar de forma
+        if (rb != null)
         {
-            Destroy(c);
-        }
-        
-        // Add the appropriate collider based on the shape
-        switch (currentShape)
-        {
-            case CharacterShape.Sphere:
-                SphereCollider sphereCol = gameObject.AddComponent<SphereCollider>();
-                sphereCol.radius = 1.25f;
-                sphereCol.center = new Vector3(0, -0.1f, 0); // Ajusta el centro ligeramente hacia abajo
-                break;
-                
-            case CharacterShape.Cube:
-                BoxCollider boxCol = gameObject.AddComponent<BoxCollider>();
-                boxCol.center = new Vector3(0, 1, -1); // Centro coincide con la posición
-                boxCol.size = new Vector3(0.7f, 4f, 1f); // Mismo tamaño que la escala
-                break;
-                
-            case CharacterShape.Flat:
-                BoxCollider flatCol = gameObject.AddComponent<BoxCollider>();
-                flatCol.center = new Vector3(0, 0, -0.8f); // Centro coincide con la posición
-                flatCol.size = new Vector3(6f, 2f, 1f); // Mismo tamaño que la escala
-                break;
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, rb.linearVelocity.y, 0);
+            rb.angularVelocity = Vector3.zero;
         }
     }
     
     void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Player collided with: " + collision.gameObject.name + " (Tag: " + collision.gameObject.tag + ")");
         // Check if we've landed on something
-        if (collision.contacts[0].normal.y > 0.5f)
+        if (collision.contacts.Length > 0 && collision.contacts[0].normal.y > 0.5f)
         {
             isGrounded = true;
+        }
+        
+        // Asegurarse de que el personaje no se hunda en el suelo
+        if (collision.gameObject.name == "Ground" && transform.position.y < characterHeight)
+        {
+            transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
+        }
+    }
+    
+    void OnCollisionStay(Collision collision)
+    {
+        // Mantener el estado de grounded mientras estamos en contacto con el suelo
+        if (collision.gameObject.CompareTag("Untagged") || collision.gameObject.name == "Ground")
+        {
+            isGrounded = true;
+            
+            // Mantener la altura correcta
+            if (transform.position.y < characterHeight)
+            {
+                transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
+            }
+        }
+    }
+    
+    void OnCollisionExit(Collision collision)
+    {
+        // Solo perder el estado grounded si abandonamos el suelo
+        if (collision.gameObject.CompareTag("Untagged") || collision.gameObject.name == "Ground")
+        {
+            isGrounded = false;
         }
     }
     
@@ -164,9 +203,9 @@ public class LiquidCharacterController : MonoBehaviour
         // Desactivar la física del personaje
         rb.isKinematic = true;
         
-        // Deshabilitar los colliders
-        Collider[] colliders = GetComponents<Collider>();
-        foreach (Collider c in colliders)
+        // Deshabilitar todos los colliders del personaje y sus hijos
+        Collider[] allColliders = GetComponentsInChildren<Collider>();
+        foreach (Collider c in allColliders)
         {
             c.enabled = false;
         }
@@ -189,5 +228,14 @@ public class LiquidCharacterController : MonoBehaviour
         // Cargar la escena actual
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+    }
+    
+    void LateUpdate()
+    {
+        // Forzar que el personaje mantenga la altura mínima
+        if (transform.position.y < characterHeight && isGrounded)
+        {
+            transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
+        }
     }
 }

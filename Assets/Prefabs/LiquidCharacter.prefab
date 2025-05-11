@@ -374,9 +374,10 @@ MonoBehaviour:
   jumpForce: 5
   maxHealth: 3
   currentShape: 0
-  sphereShape: {fileID: 6692975153668135949}
   cubeShape: {fileID: 1687445125566578711}
-  flatShape: {fileID: 1308573042222432762}
+  tetrisFigure1: {fileID: 6567566372298990485}
+  tetrisFigure2: {fileID: 5804590629061889150}
+  tetrisFigure3: {fileID: 1309825853790817660}
 --- !u!1 &1687445125566578711
 GameObject:
   m_ObjectHideFlags: 0
