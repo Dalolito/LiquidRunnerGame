@@ -37,6 +37,9 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        
+        // Debug para confirmar que el GameManager está activo
+        Debug.Log("GameManager initialized");
     }
     
     void Start()
@@ -49,6 +52,8 @@ public class GameManager : MonoBehaviour
         {
             gameOverPanel.SetActive(false);
         }
+        
+        Debug.Log("GameManager started, gameOver = " + gameOver);
     }
     
     void Update()
@@ -98,9 +103,14 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         if (gameOver)
+        {
+            Debug.Log("GameOver already called, skipping");
             return;
+        }
             
         gameOver = true;
+        
+        Debug.Log("STARTING GAME OVER SEQUENCE");
         
         // Actualizar el puntaje final en el panel de Game Over
         if (finalScoreText != null)
@@ -112,6 +122,11 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
+            Debug.Log("Game Over panel activated");
+        }
+        else
+        {
+            Debug.LogError("Game Over panel is null!");
         }
         
         Debug.Log("GAME OVER - Puntaje final: " + Mathf.Floor(score));
@@ -121,20 +136,33 @@ public class GameManager : MonoBehaviour
         if (obstacleManager != null)
         {
             obstacleManager.enabled = false;
+            Debug.Log("ObstacleManager disabled");
+        }
+        else
+        {
+            Debug.Log("ObstacleManager not found");
         }
         
         LiquidCharacterController playerController = FindObjectOfType<LiquidCharacterController>();
         if (playerController != null)
         {
             playerController.enabled = false;
+            Debug.Log("Player controller disabled");
+        }
+        else
+        {
+            Debug.Log("Player controller not found");
         }
         
         // No detenemos completamente el tiempo para permitir animaciones de UI
         Time.timeScale = 0.1f;
+        Debug.Log("Time scale reduced to 0.1");
     }
     
     public void RestartGame()
     {
+        Debug.Log("Restarting game...");
+        
         // Desactivar UI antes de recargar
         if (gameOverPanel != null)
         {

@@ -32,20 +32,32 @@ public class LiquidCharacterController : MonoBehaviour
     
     void Start()
     {
+        // Añadir o configurar Rigidbody si es necesario
         rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+            Debug.Log("Added Rigidbody to player");
+        }
+        
+        // Configurar el Rigidbody para una mejor detección de colisiones
+        rb.mass = 1.0f;
+        rb.drag = 0.5f;
+        rb.angularDrag = 0.5f;
+        rb.freezeRotation = true; // Evita que el personaje gire
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous; // Mejor detección para objetos rápidos
+
         currentHealth = maxHealth;
         
         // Asegurarse de que el GameObject tiene el tag Player
         gameObject.tag = "Player";
-        
-        // Asegurarse de que el Rigidbody esté configurado correctamente
-        if (rb != null)
+        foreach (Transform child in transform)
         {
-            rb.mass = 1.0f;
-            rb.linearDamping = 0.5f;
-            rb.angularDamping = 0.5f;
-            rb.freezeRotation = true; // Evita que el personaje gire
+            child.gameObject.tag = "Player";
         }
+        
+        // Asegurar que todos los elementos tienen los colliders configurados correctamente
+        ConfigureColliders();
         
         // Centrar todas las figuras
         CenterAllFigures();
@@ -56,7 +68,28 @@ public class LiquidCharacterController : MonoBehaviour
         UpdateCharacterShape();
         
         // Debug
-        Debug.Log("Personaje inicializado con tag: " + gameObject.tag);
+        Debug.Log("Personaje inicializado con tag: " + gameObject.tag + " y Rigidbody configurado: " + rb);
+    }
+    
+    // Método para asegurar que todos los colliders están bien configurados
+    void ConfigureColliders()
+    {
+        // Asegurarse de que el personaje principal tiene un collider
+        Collider mainCollider = GetComponent<Collider>();
+        if (mainCollider == null)
+        {
+            BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+            boxCollider.size = new Vector3(2, 2, 1); // Tamaño que abarque todas las formas
+            boxCollider.center = new Vector3(0, 0, 0);
+            boxCollider.isTrigger = false; // No es trigger para detectar colisiones físicas
+            Debug.Log("Added BoxCollider to main player object");
+        }
+        
+        // Asegurarse de que cada parte del personaje tiene el tag correcto
+        if (cubeShape != null) cubeShape.tag = "Player";
+        if (tetrisFigure1 != null) tetrisFigure1.tag = "Player";
+        if (tetrisFigure2 != null) tetrisFigure2.tag = "Player";
+        if (tetrisFigure3 != null) tetrisFigure3.tag = "Player";
     }
     
     void CenterAllFigures()
@@ -157,6 +190,46 @@ public class LiquidCharacterController : MonoBehaviour
         {
             transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
         }
+        
+        // Verificar colisión con obstáculos
+        if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            Debug.Log("Player collided with obstacle: " + collision.gameObject.name);
+            
+            LavaWall lavaWall = collision.gameObject.GetComponent<LavaWall>();
+            if (lavaWall != null)
+            {
+                if (lavaWall.isDeadly)
+                {
+                    Die();
+                }
+                else
+                {
+                    TakeDamage(lavaWall.damage);
+                }
+            }
+            else
+            {
+                // Si no tiene el componente LavaWall, buscar en los hijos
+                LavaWall[] childWalls = collision.gameObject.GetComponentsInChildren<LavaWall>();
+                if (childWalls.Length > 0)
+                {
+                    if (childWalls[0].isDeadly)
+                    {
+                        Die();
+                    }
+                    else
+                    {
+                        TakeDamage(childWalls[0].damage);
+                    }
+                }
+                else
+                {
+                    // Si no se encuentra ningún componente LavaWall, asumir que es mortal
+                    Die();
+                }
+            }
+        }
     }
     
     void OnCollisionStay(Collision collision)
@@ -180,6 +253,54 @@ public class LiquidCharacterController : MonoBehaviour
         if (collision.gameObject.CompareTag("Untagged") || collision.gameObject.name == "Ground")
         {
             isGrounded = false;
+        }
+    }
+    
+    // Añadimos detección de triggers para los obstáculos configurados como triggers
+    void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("Player triggered with: " + other.gameObject.name + " (tag: " + other.tag + ")");
+        
+        if (other.CompareTag("Obstacle"))
+        {
+            Debug.Log("Player triggered with obstacle!");
+            
+            LavaWall lavaWall = other.GetComponent<LavaWall>();
+            if (lavaWall != null)
+            {
+                if (lavaWall.isDeadly)
+                {
+                    Debug.Log("Deadly obstacle - calling Die()");
+                    Die();
+                }
+                else
+                {
+                    Debug.Log("Non-deadly obstacle - applying damage: " + lavaWall.damage);
+                    TakeDamage(lavaWall.damage);
+                }
+            }
+            else
+            {
+                // Si no se encuentra el componente LavaWall, buscar en los padres o asumir que es mortal
+                LavaWall parentWall = other.GetComponentInParent<LavaWall>();
+                if (parentWall != null)
+                {
+                    if (parentWall.isDeadly)
+                    {
+                        Die();
+                    }
+                    else
+                    {
+                        TakeDamage(parentWall.damage);
+                    }
+                }
+                else
+                {
+                    // Si no se encuentra ningún componente LavaWall, asumir que es mortal
+                    Debug.Log("No LavaWall component found on obstacle, assuming deadly");
+                    Die();
+                }
+            }
         }
     }
     
@@ -246,6 +367,17 @@ public class LiquidCharacterController : MonoBehaviour
         if (transform.position.y < characterHeight && isGrounded)
         {
             transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
+        }
+    }
+    
+    // Método para mostrar información de depuración en pantalla
+    void OnGUI()
+    {
+        if (Debug.isDebugBuild)
+        {
+            GUI.Label(new Rect(10, 10, 300, 20), "Player Health: " + currentHealth);
+            GUI.Label(new Rect(10, 30, 300, 20), "Player Shape: " + currentShape);
+            GUI.Label(new Rect(10, 50, 300, 20), "Grounded: " + isGrounded);
         }
     }
 }
