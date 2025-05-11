@@ -125,9 +125,38 @@ public class ObstacleManager : MonoBehaviour
         // Asegurarse de que el obstáculo y sus hijos tienen el tag "Obstacle"
         container.tag = "Obstacle";
         wall.tag = "Obstacle";
+        
+        // IMPORTANTE: Añadir el script LavaWall a todos los colliders con trigger
         foreach (Transform child in wall.transform)
         {
             child.gameObject.tag = "Obstacle";
+            
+            // Verificar si tiene collider y está como trigger
+            Collider childCollider = child.GetComponent<Collider>();
+            if (childCollider != null && childCollider.isTrigger)
+            {
+                // Añadir el script LavaWall si no lo tiene
+                LavaWall lavaWall = child.GetComponent<LavaWall>();
+                if (lavaWall == null)
+                {
+                    lavaWall = child.gameObject.AddComponent<LavaWall>();
+                    lavaWall.isDeadly = true;
+                    lavaWall.damage = 1f;
+                }
+            }
+        }
+        
+        // También verificar el objeto padre
+        Collider parentCollider = wall.GetComponent<Collider>();
+        if (parentCollider != null && parentCollider.isTrigger)
+        {
+            LavaWall lavaWall = wall.GetComponent<LavaWall>();
+            if (lavaWall == null)
+            {
+                lavaWall = wall.gameObject.AddComponent<LavaWall>();
+                lavaWall.isDeadly = true;
+                lavaWall.damage = 1f;
+            }
         }
         
         // Asegurarse de que los colliders estén configurados como triggers
@@ -174,6 +203,19 @@ public class ObstacleManager : MonoBehaviour
         foreach (Transform child in pendulum.transform)
         {
             child.gameObject.tag = "Obstacle";
+            
+            // Verificar si tiene collider y añadir el script LavaWall
+            Collider childCollider = child.GetComponent<Collider>();
+            if (childCollider != null && childCollider.isTrigger)
+            {
+                LavaWall lavaWall = child.GetComponent<LavaWall>();
+                if (lavaWall == null)
+                {
+                    lavaWall = child.gameObject.AddComponent<LavaWall>();
+                    lavaWall.isDeadly = true;
+                    lavaWall.damage = 1f;
+                }
+            }
         }
         
         // Añadir a la lista de obstáculos activos

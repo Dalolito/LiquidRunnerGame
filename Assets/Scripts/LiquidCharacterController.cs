@@ -35,6 +35,9 @@ public class LiquidCharacterController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         currentHealth = maxHealth;
         
+        // Asegurarse de que el GameObject tiene el tag Player
+        gameObject.tag = "Player";
+        
         // Asegurarse de que el Rigidbody esté configurado correctamente
         if (rb != null)
         {
@@ -51,6 +54,9 @@ public class LiquidCharacterController : MonoBehaviour
         transform.position = new Vector3(transform.position.x, characterHeight, transform.position.z);
         
         UpdateCharacterShape();
+        
+        // Debug
+        Debug.Log("Personaje inicializado con tag: " + gameObject.tag);
     }
     
     void CenterAllFigures()
@@ -214,11 +220,15 @@ public class LiquidCharacterController : MonoBehaviour
         GameManager gameManager = GameObject.FindAnyObjectByType<GameManager>();
         if (gameManager != null)
         {
+            Debug.Log("Calling GameManager.GameOver()");
             gameManager.GameOver();
         }
         else
         {
             Debug.LogError("GameManager not found in scene!");
+            // Intentar cargar la escena actual como respaldo
+            UnityEngine.SceneManagement.SceneManager.LoadScene(
+                UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
         }
     }
     
