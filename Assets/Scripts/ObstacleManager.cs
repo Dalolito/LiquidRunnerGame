@@ -6,36 +6,35 @@ public class ObstacleManager : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float scrollSpeed = 5f;
-    public float speedIncreaseRate = 0.1f; // Incremento de velocidad por segundo
-    public float maxSpeed = 20f; // Velocidad máxima
+    public float speedIncreaseRate = 0.1f;
+    public float maxSpeed = 20f;
 
-    [Header("Unified Obstacle Generation")]
-    public GameObject[] obstaclePrefabs; // Array de prefabs de obstáculos (muros de lava)
-    public GameObject pendulumPrefab;    // Prefab del péndulo
-    public float obstacleSpawnRate = 0.14f; // Tasa de aparición de obstáculos (0-1)
-    public float pendulumSpawnChance = 0.2f; // Probabilidad de que el obstáculo sea un péndulo
-    public float obstacleDistance = 30f; // Distancia a la que aparecen los obstáculos
-    public float destroyDistance = -35f; // Distancia a la que se destruyen los obstáculos
-    public float minimumObstacleSpace = 12f; // Espacio mínimo entre obstáculos
-
-    [Header("Pendulum Settings")]
-    public float pendulumMinHeight = 10f;
-    public float pendulumMaxHeight = 10f;
+    [Header("Obstacle Generation")]
+    public GameObject[] obstaclePrefabs; // Todos los obstáculos de lava
+    public GameObject pendulumPrefab;    // Prefab específico para péndulo
+    public float pendulumChance = 0.25f; // Probabilidad de generar péndulo vs muro de lava
+    public float spawnInterval = 3f; 
+    public float minSpawnInterval = 1f;
+    public float obstacleDistance = 30f; // Distancia Z fija para todos los obstáculos
+    public float destroyDistance = -35f;
+    public float minimumObstacleSpace = 12f; // Espacio mínimo entre obstáculos normales
+    public float pendulumExtraSpace = 8f;    // Espacio adicional después de un péndulo
 
     [Header("Floor Settings")]
     public Transform floorTransform;
 
-    // Variables de control internas
+    // Control variables
     private float obstacleTimer = 0f;
     private List<GameObject> activeObstacles = new List<GameObject>();
-    private float difficulty = 0f; // Contador de dificultad
+    private float difficulty = 0f;
     private Vector2 textureOffset = Vector2.zero;
-    private float distanceSinceLastObstacle = 0f;
-    private GameObject lastSpawnedObstacle = null;
+    private bool lastWasPendulum = false;     // Para rastrear si el último obstáculo fue un péndulo
+
+    [Header("Offset Settings")]
+    public float pendulumZOffset = -20f;  // Ajuste de posición Z para péndulos (negativo = más lejos)
 
     void Start()
     {
-        // Si no se asignó un piso, intentar encontrarlo
         if (floorTransform == null)
         {
             GameObject floor = GameObject.Find("Ground");
@@ -45,134 +44,148 @@ public class ObstacleManager : MonoBehaviour
             }
         }
         
-        // Inicializar distancia
-        distanceSinceLastObstacle = minimumObstacleSpace;
+        // Debug de los prefabs
+        Debug.Log("Prefabs configurados: " + (obstaclePrefabs != null ? obstaclePrefabs.Length : 0) + " muros, " + 
+                 (pendulumPrefab != null ? "1" : "0") + " péndulo");
     }
 
     void Update()
     {
-        // Incrementar la dificultad con el tiempo
+        // Incrementar la dificultad y velocidad
         difficulty += Time.deltaTime;
-        
-        // Aumentar la velocidad con el tiempo
         scrollSpeed = Mathf.Min(scrollSpeed + speedIncreaseRate * Time.deltaTime, maxSpeed);
 
-        // Calcular el intervalo de aparición basado en la tasa de aparición y la dificultad
-        float currentSpawnInterval = Mathf.Max(1f / (obstacleSpawnRate + (difficulty * 0.01f)), 0.5f);
+        // Calcular intervalo basado en dificultad
+        float currentSpawnInterval = Mathf.Max(spawnInterval - (difficulty * 0.05f), minSpawnInterval);
         
-        // Calcular espacio mínimo actual (puede disminuir con el tiempo)
-        float currentMinSpace = Mathf.Max(minimumObstacleSpace - (difficulty * 0.05f), 5f);
-        
-        // Actualizar distancia desde el último obstáculo
-        if (lastSpawnedObstacle != null)
+        // Si el último fue un péndulo, añadir tiempo de espera adicional
+        if (lastWasPendulum)
         {
-            distanceSinceLastObstacle = obstacleDistance - lastSpawnedObstacle.transform.position.z;
-        }
-        else
-        {
-            distanceSinceLastObstacle += scrollSpeed * Time.deltaTime;
+            currentSpawnInterval += pendulumExtraSpace / scrollSpeed;
         }
         
-        // Generar obstáculos con una combinación de tiempo y espacio
+        // Incrementar timer
         obstacleTimer += Time.deltaTime;
         
-        // Solo generar un nuevo obstáculo si:
-        // 1. Ha pasado suficiente tiempo desde el último
-        // 2. Hay suficiente espacio desde el último obstáculo
-        if (obstacleTimer >= currentSpawnInterval && distanceSinceLastObstacle >= currentMinSpace)
+        // Verificar si es tiempo de generar un nuevo obstáculo
+        if (obstacleTimer >= currentSpawnInterval)
         {
-            SpawnObstacle();
+            // Decidir entre muro de lava o péndulo
+            bool spawnPendulum = Random.value < pendulumChance && pendulumPrefab != null;
+            
+            // Si el último fue un péndulo, evitar generar otro péndulo
+            if (lastWasPendulum)
+            {
+                spawnPendulum = false;
+            }
+            
+            if (spawnPendulum)
+            {
+                SpawnPendulum();
+                lastWasPendulum = true;
+            }
+            else
+            {
+                SpawnLavaWall();
+                lastWasPendulum = false;
+            }
+            
+            // Resetear el timer
             obstacleTimer = 0f;
-            distanceSinceLastObstacle = 0f;
         }
 
-        // Mover obstáculos
+        // Mover obstáculos existentes
         MoveObstacles();
-
-        // Animar el piso
-        AnimateFloor();
         
-        // Depuración
-        if (lastSpawnedObstacle != null)
-        {
-            Debug.DrawLine(
-                new Vector3(-5, 1, lastSpawnedObstacle.transform.position.z + currentMinSpace),
-                new Vector3(5, 1, lastSpawnedObstacle.transform.position.z + currentMinSpace),
-                Color.green
-            );
-        }
+        // Animar el suelo
+        AnimateFloor();
     }
 
-    void SpawnObstacle()
+    void SpawnLavaWall()
     {
-        // Decidir si generar un péndulo o un muro de lava
-        bool spawnPendulum = Random.value < pendulumSpawnChance && pendulumPrefab != null;
-        
-        GameObject newObstacle = null;
-        
-        if (spawnPendulum)
+        if (obstaclePrefabs == null || obstaclePrefabs.Length == 0)
         {
-            // Calcular posición para el péndulo
-            float zPosition = obstacleDistance;
-            float yPosition = Random.Range(pendulumMinHeight, pendulumMaxHeight);
-            Vector3 spawnPosition = new Vector3(0, yPosition, zPosition);
-            
-            // Instanciar el péndulo
-            newObstacle = Instantiate(pendulumPrefab, spawnPosition, Quaternion.identity);
-            
-            // Configurar fase aleatoria para el péndulo
-            PendulumMovement pendulumScript = newObstacle.GetComponent<PendulumMovement>();
-            if (pendulumScript != null)
-            {
-                pendulumScript.phaseOffset = Random.Range(0f, 360f);
-            }
-            
-            // Configurar tags
-            newObstacle.tag = "Obstacle";
-            foreach (Transform child in newObstacle.transform)
-            {
-                child.gameObject.tag = "Obstacle";
-            }
-            
-            Debug.Log("Spawned pendulum at " + zPosition);
+            Debug.LogError("No hay prefabs de muro de lava configurados");
+            return;
         }
-        else if (obstaclePrefabs.Length > 0)
+            
+        // Seleccionar un prefab aleatorio
+        int prefabIndex = Random.Range(0, obstaclePrefabs.Length);
+        
+        // IMPORTANTE: Crear un nuevo GameObject vacío que servirá como contenedor
+        GameObject container = new GameObject("LavaWallContainer");
+        container.transform.position = new Vector3(0, 0, obstacleDistance); // Posición Z exacta
+        
+        // Instanciar el muro como hijo del contenedor
+        GameObject wall = Instantiate(obstaclePrefabs[prefabIndex], container.transform);
+        
+        // Ajustar la posición local del muro para que esté a la derecha
+        wall.transform.localPosition = new Vector3(3.2f, 1.4f, 0);
+        
+        // Asegurarse de que el obstáculo y sus hijos tienen el tag "Obstacle"
+        container.tag = "Obstacle";
+        wall.tag = "Obstacle";
+        foreach (Transform child in wall.transform)
         {
-            // Seleccionar un prefab aleatorio de muro de lava
-            int prefabIndex = Random.Range(0, obstaclePrefabs.Length);
-            
-            // Crear el obstáculo
-            Vector3 spawnPosition = new Vector3(3.2f, 1.4f, obstacleDistance);
-            newObstacle = Instantiate(obstaclePrefabs[prefabIndex], spawnPosition, Quaternion.identity);
-            
-            // Configurar tags y colliders
-            newObstacle.tag = "Obstacle";
-            foreach (Transform child in newObstacle.transform)
-            {
-                child.gameObject.tag = "Obstacle";
-            }
-            
-            foreach (Collider collider in newObstacle.GetComponentsInChildren<Collider>(true))
-            {
-                collider.isTrigger = true;
-            }
-            
-            Debug.Log("Spawned lava wall at " + obstacleDistance);
+            child.gameObject.tag = "Obstacle";
         }
         
-        // Registrar y añadir a la lista
-        if (newObstacle != null)
+        // Asegurarse de que los colliders estén configurados como triggers
+        foreach (Collider collider in wall.GetComponentsInChildren<Collider>(true))
         {
-            lastSpawnedObstacle = newObstacle;
-            activeObstacles.Add(newObstacle);
+            collider.isTrigger = true;
         }
+        
+        // Añadir a la lista de obstáculos activos
+        activeObstacles.Add(container);
+        
+        Debug.Log("Muro de lava generado con posición Z = " + container.transform.position.z);
+    }
+    
+    void SpawnPendulum()
+    {
+        if (pendulumPrefab == null)
+        {
+            Debug.LogError("No hay prefab de péndulo configurado");
+            return;
+        }
+        
+        // IMPORTANTE: Crear un nuevo GameObject vacío que servirá como contenedor
+        GameObject container = new GameObject("PendulumContainer");
+       // Aplicar la posición z con el offset configurable
+        container.transform.position = new Vector3(0, 0, obstacleDistance + pendulumZOffset);
+        
+        // Instanciar el péndulo como hijo del contenedor
+        GameObject pendulum = Instantiate(pendulumPrefab, container.transform);
+        
+        // Ajustar la posición local del péndulo para que esté a la altura correcta
+        pendulum.transform.localPosition = new Vector3(0, 10f, 0);
+        
+        // Configurar el componente PendulumMovement si existe
+        PendulumMovement movement = pendulum.GetComponentInChildren<PendulumMovement>();
+        if (movement != null)
+        {
+            movement.phaseOffset = Random.Range(0f, 360f);
+        }
+        
+        // Asegurarse de que el péndulo y sus hijos tienen el tag "Obstacle"
+        container.tag = "Obstacle";
+        pendulum.tag = "Obstacle";
+        foreach (Transform child in pendulum.transform)
+        {
+            child.gameObject.tag = "Obstacle";
+        }
+        
+        // Añadir a la lista de obstáculos activos
+        activeObstacles.Add(container);
+        
+        Debug.Log("Péndulo generado con posición Z = " + container.transform.position.z);
     }
 
     void MoveObstacles()
     {
         List<GameObject> obstaclesToRemove = new List<GameObject>();
 
-        // Mover cada obstáculo
         foreach (GameObject obstacle in activeObstacles)
         {
             if (obstacle == null)
@@ -185,19 +198,11 @@ public class ObstacleManager : MonoBehaviour
             if (obstacle.transform.position.z < destroyDistance)
             {
                 obstaclesToRemove.Add(obstacle);
-                
-                // Si este es el último obstáculo que generamos, actualizar referencia
-                if (obstacle == lastSpawnedObstacle)
-                {
-                    lastSpawnedObstacle = null;
-                    distanceSinceLastObstacle = minimumObstacleSpace; // Permitir generación inmediata
-                }
-                
                 Destroy(obstacle);
             }
         }
 
-        // Eliminar obstáculos destruidos de la lista
+        // Eliminar referencias a obstáculos destruidos
         foreach (GameObject obstacle in obstaclesToRemove)
         {
             activeObstacles.Remove(obstacle);
@@ -208,43 +213,29 @@ public class ObstacleManager : MonoBehaviour
     {
         if (floorTransform != null)
         {
-            // Obtener el renderer del piso
             Renderer floorRenderer = floorTransform.GetComponent<Renderer>();
             
             if (floorRenderer != null)
             {
-                // Actualizar el offset de la textura para dar la impresión de movimiento
                 textureOffset.y += scrollSpeed * Time.deltaTime * 0.1f;
                 
-                // Para URP/HDRP, utiliza las propiedades adecuadas
                 if (floorRenderer.material.HasProperty("_BaseMap"))
                 {
                     floorRenderer.material.SetTextureOffset("_BaseMap", textureOffset);
                 }
                 else if (floorRenderer.material.HasProperty("_MainTex"))
                 {
-                    // Sólo aplicar el offset a la textura principal si existe
                     floorRenderer.material.SetTextureOffset("_MainTex", textureOffset);
                 }
             }
         }
     }
 
-    // Método para visualizar parámetros en el editor
+    // Para visualizar la posición de generación
     void OnDrawGizmos()
     {
-        // Distancia de generación
+        // Dibujar una línea que muestra la posición Z de generación
         Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(
-            new Vector3(-5, 1, obstacleDistance), 
-            new Vector3(5, 1, obstacleDistance)
-        );
-        
-        // Espacio mínimo
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(
-            new Vector3(-5, 1, obstacleDistance - minimumObstacleSpace), 
-            new Vector3(5, 1, obstacleDistance - minimumObstacleSpace)
-        );
+        Gizmos.DrawLine(new Vector3(-10, 0, obstacleDistance), new Vector3(10, 0, obstacleDistance));
     }
 }
