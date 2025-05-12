@@ -32,6 +32,11 @@ public class LiquidCharacterController : MonoBehaviour
 
     [Header("Effects")]
     public GameObject transformEffectPrefab;
+
+    [Header("Sound Effects")]
+    public AudioClip shapeChangeSound;     
+    public float soundVolume = 0.7f;       
+    private AudioSource audioSource;       
     
     void Start()
     {
@@ -58,6 +63,19 @@ public class LiquidCharacterController : MonoBehaviour
         {
             child.gameObject.tag = "Player";
         }
+        
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            Debug.Log("Added AudioSource to player");
+        }
+        
+        // Configurar el AudioSource
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;     // 0 = 2D, 1 = 3D completo
+        audioSource.volume = soundVolume;
         
         // Asegurar que todos los elementos tienen los colliders configurados correctamente
         ConfigureColliders();
@@ -140,10 +158,38 @@ public class LiquidCharacterController : MonoBehaviour
         }
     }
     
-     void ChangeShape(CharacterShape newShape)
+    void ChangeShape(CharacterShape newShape)
     {
         if (currentShape != newShape)
         {
+            // Reproducir sonido de cambio de forma
+            if (audioSource != null && shapeChangeSound != null)
+            {
+                // Variar ligeramente el tono para cada tipo de forma
+                float pitchVariation = 1.0f;
+                switch (newShape)
+                {
+                    case CharacterShape.Cube:
+                        pitchVariation = 1.0f;
+                        break;
+                    case CharacterShape.Tetris1:
+                        pitchVariation = 1.1f;
+                        break;
+                    case CharacterShape.Tetris2:
+                        pitchVariation = 1.2f;
+                        break;
+                    case CharacterShape.Tetris3:
+                        pitchVariation = 1.3f;
+                        break;
+                }
+                
+                // Aplicar variación de tono
+                audioSource.pitch = pitchVariation;
+                
+                // Reproducir el sonido
+                audioSource.PlayOneShot(shapeChangeSound, soundVolume);
+            }
+            
             // Crear efecto de transformación
             if (transformEffectPrefab != null)
             {

@@ -111,6 +111,13 @@ public class GameManager : MonoBehaviour
         gameOver = true;
         
         Debug.Log("STARTING GAME OVER SEQUENCE");
+
+        // Notificar al AudioManager
+        AudioManager audioManager = FindObjectOfType<AudioManager>();
+        if (audioManager != null)
+        {
+            audioManager.OnGameOver();
+        }
         
         // Actualizar el puntaje final en el panel de Game Over
         if (finalScoreText != null)
@@ -219,6 +226,11 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f;
         
         Debug.Log("Juego Pausado - Presiona ESC para continuar");
+        AudioManager audioManager = FindObjectOfType<AudioManager>();
+        if (audioManager != null)
+        {
+            audioManager.OnGamePaused(true);
+        }
     }
     
     public void ResumeGame()
@@ -227,5 +239,10 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         
         Debug.Log("Juego Reanudado");
+        AudioManager audioManager = FindObjectOfType<AudioManager>();
+        if (audioManager != null)
+        {
+            audioManager.OnGamePaused(false);
+        }
     }
 }
