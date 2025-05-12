@@ -7,6 +7,24 @@ public class LavaWall : MonoBehaviour
     [Header("Wall Properties")]
     public bool isDeadly = true;
     public float damage = 1f;
+    
+    private void Start()
+    {
+        // Asegurarse de que el objeto tiene el tag correcto
+        gameObject.tag = "Obstacle";
+        
+        // Verificar si tiene collider y configurarlo como trigger
+        Collider collider = GetComponent<Collider>();
+        if (collider != null)
+        {
+            collider.isTrigger = true;
+            Debug.Log("LavaWall initialized with collider as trigger");
+        }
+        else
+        {
+            Debug.LogWarning("LavaWall has no collider attached: " + gameObject.name);
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -18,48 +36,29 @@ public class LavaWall : MonoBehaviour
         {
             Debug.Log("Player hit by lava wall!");
             
-            // Obtener el controlador del jugador
+            // Intentar obtener el controlador desde el objeto raíz del jugador
             LiquidCharacterController playerController = other.GetComponent<LiquidCharacterController>();
-            
-            // Si no encontramos el controlador en el objeto directo, buscamos en el padre
             if (playerController == null)
             {
                 playerController = other.GetComponentInParent<LiquidCharacterController>();
-                Debug.Log("Searching for player controller in parent: " + (playerController != null ? "Found" : "Not found"));
-            }
-            
-            // Intentar obtener el controlador desde el objeto raíz del jugador
-            if (playerController == null)
-            {
-                GameObject player = GameObject.FindGameObjectWithTag("Player");
-                if (player != null)
-                {
-                    playerController = player.GetComponent<LiquidCharacterController>();
-                    Debug.Log("Trying to find player controller by tag: " + (playerController != null ? "Found" : "Not found"));
-                }
             }
             
             if (playerController != null)
             {
-                // Verificar si el obstáculo es mortal
                 if (isDeadly)
                 {
-                    // Si es mortal, causar muerte inmediata
-                    Debug.Log("Calling Die() on player controller");
                     playerController.Die();
                 }
                 else
                 {
-                    // Si no es mortal, aplicar daño según la cantidad configurada
-                    Debug.Log("Applying damage to player: " + damage);
                     playerController.TakeDamage(damage);
                 }
             }
             else
             {
-                Debug.LogError("Player controller component not found! Attempting to trigger game over directly.");
+                Debug.LogError("Player controller not found! Calling GameOver directly");
                 
-                // Intento de recuperación: llamar directamente al GameManager
+                // Llamar directamente al GameManager como respaldo
                 GameManager gameManager = FindObjectOfType<GameManager>();
                 if (gameManager != null)
                 {
@@ -72,12 +71,13 @@ public class LavaWall : MonoBehaviour
     // Método adicional para manejar colisiones no trigger
     private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Regular collision with " + collision.gameObject.name + " (tag: " + collision.gameObject.tag + ")");
+        Debug.Log("Regular collision with " + collision.gameObject.name);
         
         if (collision.gameObject.CompareTag("Player"))
         {
-            Debug.Log("Player collided with lava wall (non-trigger)!");
+            Debug.Log("Player collided with lava wall!");
             
+            // Intentar obtener el controlador del jugador
             LiquidCharacterController playerController = collision.gameObject.GetComponent<LiquidCharacterController>();
             if (playerController == null)
             {
@@ -97,7 +97,7 @@ public class LavaWall : MonoBehaviour
             }
             else
             {
-                // Intento de recuperación: llamar directamente al GameManager
+                // Llamar directamente al GameManager
                 GameManager gameManager = FindObjectOfType<GameManager>();
                 if (gameManager != null)
                 {

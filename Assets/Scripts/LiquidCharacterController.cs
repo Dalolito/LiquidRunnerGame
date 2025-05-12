@@ -29,6 +29,9 @@ public class LiquidCharacterController : MonoBehaviour
     
     [Header("Height Adjustment")]
     public float characterHeight = 2f; // Altura base del personaje sobre el suelo
+
+    [Header("Effects")]
+    public GameObject transformEffectPrefab;
     
     void Start()
     {
@@ -42,8 +45,8 @@ public class LiquidCharacterController : MonoBehaviour
         
         // Configurar el Rigidbody para una mejor detección de colisiones
         rb.mass = 1.0f;
-        rb.drag = 0.5f;
-        rb.angularDrag = 0.5f;
+        rb.linearDamping = 0.5f;
+        rb.angularDamping = 0.5f;
         rb.freezeRotation = true; // Evita que el personaje gire
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous; // Mejor detección para objetos rápidos
 
@@ -137,10 +140,73 @@ public class LiquidCharacterController : MonoBehaviour
         }
     }
     
-    void ChangeShape(CharacterShape newShape)
+     void ChangeShape(CharacterShape newShape)
     {
-        currentShape = newShape;
-        UpdateCharacterShape();
+        if (currentShape != newShape)
+        {
+            // Crear efecto de transformación
+            if (transformEffectPrefab != null)
+            {
+                // Instanciar el efecto
+                GameObject effect = Instantiate(transformEffectPrefab, transform.position, Quaternion.identity);
+                
+                // Obtener el tamaño aproximado de la forma actual y la nueva
+                Vector3 currentSize = GetShapeSize(currentShape);
+                Vector3 newSize = GetShapeSize(newShape);
+                
+                // Usar el tamaño mayor entre las dos formas para asegurar cobertura completa
+                float maxSize = Mathf.Max(
+                    Mathf.Max(currentSize.x, currentSize.y, currentSize.z),
+                    Mathf.Max(newSize.x, newSize.y, newSize.z)
+                );
+                
+                // Ajustar el sistema de partículas
+                ParticleSystem ps = effect.GetComponent<ParticleSystem>();
+                if (ps != null)
+                {
+                    // Ajustar el tamaño de las partículas
+                    var main = ps.main;
+                    main.startSize = maxSize * 0.4f; // 40% del tamaño máximo
+                    
+                    // Ajustar el radio de emisión
+                    var shape = ps.shape;
+                    shape.radius = maxSize * 0.6f; // 60% del tamaño máximo
+                    
+                    // Aumentar el número de partículas para formas más grandes
+                    var emission = ps.emission;
+                    ParticleSystem.Burst burst = emission.GetBurst(0);
+                    burst.count = 20 + (int)(maxSize * 10); // Más partículas para formas más grandes
+                    emission.SetBurst(0, burst);
+                }
+                
+                Destroy(effect, 1.0f);
+            }
+            
+            currentShape = newShape;
+            UpdateCharacterShape();
+        }
+    }
+
+    // Método auxiliar para estimar el tamaño de cada forma
+    private Vector3 GetShapeSize(CharacterShape shape)
+    {
+        switch (shape)
+        {
+            case CharacterShape.Cube:
+                return cubeShape != null ? cubeShape.transform.localScale : Vector3.one;
+                
+            case CharacterShape.Tetris1:
+                return tetrisFigure1 != null ? new Vector3(3f, 4f, 1f) : Vector3.one; // Ajustar según tus formas
+                
+            case CharacterShape.Tetris2:
+                return tetrisFigure2 != null ? new Vector3(3.5f, 3f, 1f) : Vector3.one; // Ajustar según tus formas
+                
+            case CharacterShape.Tetris3:
+                return tetrisFigure3 != null ? new Vector3(3f, 3.5f, 1f) : Vector3.one; // Ajustar según tus formas
+                
+            default:
+                return Vector3.one;
+        }
     }
     
     void UpdateCharacterShape()
