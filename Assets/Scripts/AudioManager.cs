@@ -16,10 +16,11 @@ public class AudioManager : MonoBehaviour
     [Header("Advanced Settings")]
     public float fadeInDuration = 2f;
     public float fadeOutDuration = 2f;
-    public bool dontDestroyOnLoad = true;  // Mantener música entre escenas
+    public bool dontDestroyOnLoad = true;
     
     private AudioSource musicSource;
     private Coroutine fadeCoroutine;
+    private bool isMusicStopped = false;
     
     void Awake()
     {
@@ -47,6 +48,29 @@ public class AudioManager : MonoBehaviour
             PlayMusic();
     }
     
+    void Start()
+    {
+        // Suscribirse al evento de nivel cargado para reiniciar la música
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    
+    void OnDestroy()
+    {
+        // Desuscribirse para evitar memory leaks
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+    
+    // Evento que se ejecuta cuando se carga una escena
+    void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // Si la música estaba detenida y se cargó una nueva escena, reiniciarla
+        if (isMusicStopped)
+        {
+            PlayMusic();
+            isMusicStopped = false;
+        }
+    }
+    
     public void PlayMusic()
     {
         if (backgroundMusic == null || musicSource == null) return;
@@ -55,6 +79,10 @@ public class AudioManager : MonoBehaviour
         if (fadeCoroutine != null)
             StopCoroutine(fadeCoroutine);
         
+        // Si la música ya estaba reproduciéndose, detenerla
+        if (musicSource.isPlaying)
+            musicSource.Stop();
+            
         // Comenzar a reproducir y hacer fade in
         musicSource.Play();
         fadeCoroutine = StartCoroutine(FadeMusicVolume(0f, musicVolume, fadeInDuration));
@@ -63,6 +91,9 @@ public class AudioManager : MonoBehaviour
     public void StopMusic()
     {
         if (musicSource == null) return;
+        
+        // Marcar la música como detenida
+        isMusicStopped = true;
         
         // Detener cualquier fade anterior
         if (fadeCoroutine != null)

@@ -23,8 +23,11 @@ public class GameManager : MonoBehaviour
     [Header("Score Settings")]
     public float score = 0;
     public float scoreMultiplier = 1f;
-    public float scoreMultiplierIncreaseRate = 0.1f; // Incremento del multiplicador por segundo
-    public float maxScoreMultiplier = 5f; // Máximo multiplicador de puntaje
+    public float scoreMultiplierIncreaseRate = 0.1f;
+    public float maxScoreMultiplier = 5f;
+    
+    [Header("Audio References")]
+    private AudioManager audioManager;
     
     private void Awake()
     {
@@ -44,6 +47,13 @@ public class GameManager : MonoBehaviour
     
     void Start()
     {
+        // Buscar la referencia al AudioManager
+        audioManager = FindObjectOfType<AudioManager>();
+        if (audioManager == null)
+        {
+            Debug.LogWarning("AudioManager not found in scene!");
+        }
+        
         // Inicializar el juego
         ResetGame();
         
@@ -65,7 +75,7 @@ public class GameManager : MonoBehaviour
             scoreMultiplier = Mathf.Min(scoreMultiplier + scoreMultiplierIncreaseRate * Time.deltaTime, maxScoreMultiplier);
             
             // Aumentar el puntaje basado en el multiplicador
-            score += Time.deltaTime * scoreMultiplier * 10; // Multiplicamos por 10 para que suba más rápido
+            score += Time.deltaTime * scoreMultiplier * 10;
             
             // Actualizar la UI del puntaje
             UpdateScoreUI();
@@ -113,10 +123,22 @@ public class GameManager : MonoBehaviour
         Debug.Log("STARTING GAME OVER SEQUENCE");
 
         // Notificar al AudioManager
-        AudioManager audioManager = FindObjectOfType<AudioManager>();
         if (audioManager != null)
         {
             audioManager.OnGameOver();
+        }
+        else
+        {
+            // Intentar encontrar el AudioManager nuevamente
+            audioManager = FindObjectOfType<AudioManager>();
+            if (audioManager != null)
+            {
+                audioManager.OnGameOver();
+            }
+            else
+            {
+                Debug.LogError("AudioManager not found!");
+            }
         }
         
         // Actualizar el puntaje final en el panel de Game Over
@@ -226,10 +248,20 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f;
         
         Debug.Log("Juego Pausado - Presiona ESC para continuar");
-        AudioManager audioManager = FindObjectOfType<AudioManager>();
+        
+        // Pausar la música
         if (audioManager != null)
         {
             audioManager.OnGamePaused(true);
+        }
+        else
+        {
+            // Intentar encontrar el AudioManager nuevamente
+            audioManager = FindObjectOfType<AudioManager>();
+            if (audioManager != null)
+            {
+                audioManager.OnGamePaused(true);
+            }
         }
     }
     
@@ -239,10 +271,20 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
         
         Debug.Log("Juego Reanudado");
-        AudioManager audioManager = FindObjectOfType<AudioManager>();
+        
+        // Reanudar la música
         if (audioManager != null)
         {
             audioManager.OnGamePaused(false);
+        }
+        else
+        {
+            // Intentar encontrar el AudioManager nuevamente
+            audioManager = FindObjectOfType<AudioManager>();
+            if (audioManager != null)
+            {
+                audioManager.OnGamePaused(false);
+            }
         }
     }
 }
